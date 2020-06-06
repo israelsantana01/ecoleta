@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'; 
+import { Request, Response } from 'express';
 import knex from '../database/connection';
 
 class PointsController {
@@ -28,16 +28,16 @@ class PointsController {
     if (!point) {
       return response.status(400).json({ message: 'Point not found.' });
     }
-/**
- * SELECT * FROM items 
- * JOIN point_items ON items_id = point_items.items_id 
- * WHERE point_items.point_id = {id}
- */
+    /**
+     * SELECT * FROM items 
+     * JOIN point_items ON items_id = point_items.items_id 
+     * WHERE point_items.point_id = {id}
+     */
 
     const items = await knex('items')
-    .join('point_items', 'items.id', '=', 'point_items.item_id')
-    .where('point_items.point_id', id)
-    .select('items.title');
+      .join('point_items', 'items.id', '=', 'point_items.item_id')
+      .where('point_items.point_id', id)
+      .select('items.title');
     ;
 
     return response.json({ point, items });
@@ -54,7 +54,7 @@ class PointsController {
       uf,
       items
     } = request.body;
-  
+
     const trx = await knex.transaction();
 
     const point = {
@@ -67,18 +67,21 @@ class PointsController {
       city,
       uf
     };
-  
+
     const insertedIds = await trx('points').insert(point);
-  
+
     const point_id = insertedIds[0];
-  
-    const pointItems = items.map((item_id: number) => {
-      return {
-        item_id,
-        point_id,
-      }
-    });
-  
+
+    const pointItems = items
+      .split(',')
+      .map((item: string) => Number(item.trim))
+      .map((item_id: number) => {
+        return {
+          item_id,
+          point_id,
+        }
+      });
+
     await trx('point_items').insert(pointItems);
     await trx.commit();
     return response.json({
